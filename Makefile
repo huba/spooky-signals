@@ -4,7 +4,7 @@ OBJECTS = $(patsubst %.c, %.o, $(C_FILES))
 CC = gcc
 CFLAGS = -Wall -pedantic
 LDFLAGS =
-LDLIBS = -lm
+LDLIBS = -lm -luring
 
 client1: .depend client1.o $(OBJECTS)
 	$(CC) $(CFLAGS) $(OBJECTS) client1.o -o $@ $(LDFLAGS) $(LDLIBS)
