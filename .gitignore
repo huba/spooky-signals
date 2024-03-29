@@ -1,3 +1,4 @@
 .depend
+.vscode
 *.o
 client1
