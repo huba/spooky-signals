@@ -4,16 +4,18 @@
 #include <liburing.h>
 
 #include "lib/channel.h"
+#include "lib/log.h"
 
 #define QUEUE_DEPTH 4
 #define DELAY 100000000 // 100ms
 
 int main(int argc, char *argv[]) {
+    set_log_level(LOG_LEVEL_ERROR);
 
     struct io_uring ring;
 
     if (io_uring_queue_init(QUEUE_DEPTH, &ring, 0) != 0) {
-        perror("Could not initialize I/O ring");
+        log_error("Could not initialize I/O ring\n");
         return 1;
     }
 
@@ -44,13 +46,13 @@ int main(int argc, char *argv[]) {
     struct io_uring_cqe *cqe;
     while (1) {
         if (io_uring_wait_cqe(&ring, &cqe) != 0) {
-            perror("Could not wait for CQE");
+            log_error("Could not wait for CQE");
             return 1;
         }
 
         // Ignore ETIME here, since we use a timeout to pace the output loop
         if (cqe->res < 0 && cqe->res != -ETIME) {
-            fprintf(stderr, "Error in CQE: %d\n", cqe->res);
+            log_warning("Error in CQE: %d\n", cqe->res);
             io_uring_cqe_seen(&ring, cqe);
             continue;
         }
@@ -60,7 +62,6 @@ int main(int argc, char *argv[]) {
         switch (e->type) {
             case event_channel_connected:
             case event_channel_read:
-                // Process channel event
                 channel_event(e, &ring);
                 break;
             case event_timeout:
@@ -71,7 +72,7 @@ int main(int argc, char *argv[]) {
                 channel_clear(&c3);
                 break;
             default:
-                fprintf(stderr, "Unknown event type\n");
+                log_warning("Unknown event type\n");
                 break;
         }
 

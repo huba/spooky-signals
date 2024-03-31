@@ -6,6 +6,12 @@
 #include <liburing.h>
 #include "events.h"
 
+#define CHANNEL_E_ALREADY_BUSY 1
+#define CHANNEL_E_NOT_EXPECTING_EVENT 2
+#define CHANNEL_E_COULD_NOT_GET_SQE 3
+#define CHANNEL_E_COULD_NOT_CREATE_SOCKET 4
+#define CHANNEL_E_UNKNOWN_EVENT 5
+
 struct channel {
     int socket_fd;
     char name[20];
