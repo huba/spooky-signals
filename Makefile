@@ -2,7 +2,7 @@ C_FILES = $(wildcard **/*.c)
 OBJECTS = $(patsubst %.c, %.o, $(C_FILES))
 
 CC = gcc
-CFLAGS = -Wall -pedantic
+CFLAGS = -Wall -pedantic -g
 LDFLAGS =
 LDLIBS = -lm -luring
 
