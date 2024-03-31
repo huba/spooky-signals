@@ -21,9 +21,9 @@ int main(int argc, char *argv[]) {
     struct channel c2;
     struct channel c3;
 
-    if (channel_init(&c1, "out1") != 0) return 1;
-    if (channel_init(&c2, "out2") != 0) return 1;
-    if (channel_init(&c3, "out3") != 0) return 1;
+    if (channel_init(&c1, "out1", true) != 0) return 1;
+    if (channel_init(&c2, "out2", true) != 0) return 1;
+    if (channel_init(&c3, "out3", true) != 0) return 1;
 
     channel_connect_async(&c1, &ring, "127.0.0.1", 4001);
     channel_connect_async(&c2, &ring, "127.0.0.1", 4002);
@@ -39,9 +39,10 @@ int main(int argc, char *argv[]) {
         io_uring_sqe_set_data(sqe, &delay_event);
         io_uring_submit(&ring);
     }
-
+    
+    // Enter the event loop
+    struct io_uring_cqe *cqe;
     while (1) {
-        struct io_uring_cqe *cqe;
         if (io_uring_wait_cqe(&ring, &cqe) != 0) {
             perror("Could not wait for CQE");
             return 1;
@@ -60,11 +61,7 @@ int main(int argc, char *argv[]) {
             case event_channel_connected:
             case event_channel_read:
                 // Process channel event
-                channel_event(e->data);
-                
-                // Keep waiting for incoming data
-                channel_read_async(e->data, &ring);
-
+                channel_event(e, &ring);
                 break;
             case event_timeout:
                 format_channels(stdout, 3, &c1, &c2, &c3);

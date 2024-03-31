@@ -9,7 +9,9 @@
 
 #include <unistd.h>
 
-int channel_init(struct channel *c, const char *name) {
+int channel_init(struct channel *c, const char *name, bool continous_read) {
+    c->continous_read = continous_read;
+
     strncpy(c->name, name, sizeof(c->name) - 1);
     c->name[sizeof(c->name) - 1] = 0;
 
@@ -37,21 +39,9 @@ int _is_channel_busy(struct channel *c) {
     return c->event.type != event_type_none;
 }
 
-void _copy_last_complete_line(char *dst, const char *src) {
-    const char *last_nl = strchr(src, '\n');
-    if(last_nl == NULL) return;
+int channel_event(struct event *e, struct io_uring *ring) {
+    struct channel *c = e->data;
 
-    const char *start = last_nl;
-    while (start > src && *start != '\n') {
-        start--;
-    }
-
-    fprintf(stderr, "%s | length is %ld\n", src, last_nl - start);
-
-    strncpy(dst, start, last_nl - start);
-}
-
-int channel_event(struct channel *c) {
     if (!_is_channel_busy(c)) {
         fprintf(stderr, "Channel is not currently expecting an event\n");
         return 1;
@@ -63,7 +53,8 @@ int channel_event(struct channel *c) {
             if (nl != NULL) {
                 strncpy(c->state, c->buffer, nl - c->buffer);
             }
-            fprintf(stderr, "%s reads %s\n", c->name, c->state);
+        case event_channel_connected: // FALLTHROUGH
+            if (c->continous_read) channel_read_async(c, ring);
             break;
         default:
             break;
