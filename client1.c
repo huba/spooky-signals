@@ -29,6 +29,7 @@ int main(int argc, char *argv[]) {
     channel_connect_async(&c2, &ring, "127.0.0.1", 4002);
     channel_connect_async(&c3, &ring, "127.0.0.1", 4003);
 
+    // Set up a timer
     struct __kernel_timespec delay = { .tv_sec = 0, .tv_nsec = DELAY};
     struct event delay_event = { .type = event_timeout, .data = NULL };
 
@@ -66,7 +67,11 @@ int main(int argc, char *argv[]) {
 
                 break;
             case event_timeout:
-                printf("%s: %s, %s: %s, %s: %s\n", c1.name, c1.state, c2.name, c2.state, c3.name, c3.state);
+                format_channels(stdout, 3, &c1, &c2, &c3);
+
+                channel_clear(&c1);
+                channel_clear(&c2);
+                channel_clear(&c3);
                 break;
             default:
                 fprintf(stderr, "Unknown event type\n");
