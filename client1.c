@@ -10,7 +10,7 @@
 #define DELAY 100000000 // 100ms
 
 int main(int argc, char *argv[]) {
-    set_log_level(LOG_LEVEL_ERROR);
+    get_log_env();
 
     struct io_uring ring;
 

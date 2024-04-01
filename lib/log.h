@@ -8,6 +8,8 @@
 
 void set_log_level(unsigned int level);
 
+void get_log_env();
+
 void log_with_level(unsigned int level, const char *str_template, ...);
 void log_error(const char *str_template, ...);
 void log_warning(const char *str_template, ...);

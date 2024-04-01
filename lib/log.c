@@ -2,11 +2,32 @@
 
 #include <stdarg.h>
 #include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 
 static unsigned int log_level = LOG_LEVEL_NONE;
 
 void set_log_level(unsigned int level) {
     log_level = level;
+}
+
+void get_log_env() {
+    const char *env = getenv("LOG_LEVEL");
+
+    if (!env) {
+        log_level = LOG_LEVEL_ERROR;
+        return;
+    }
+
+    if (strncmp(env, "none", 4) == 0) {
+        log_level = LOG_LEVEL_NONE;
+    } else if(strncmp(env, "error", 5) == 0) {
+        log_level = LOG_LEVEL_ERROR;
+    } else if (strncmp(env, "warning", 7) == 0) {
+        log_level = LOG_LEVEL_WARNING;
+    } else if (strncmp(env, "info", 4) == 0) {
+        log_level = LOG_LEVEL_INFO;
+    }
 }
 
 void log_with_level(unsigned int level, const char *str_template, ...) {
