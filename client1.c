@@ -1,5 +1,7 @@
 #include <stdio.h>
 #include <strings.h>
+#include <signal.h>
+#include <stdlib.h>
 
 #include <liburing.h>
 
@@ -9,8 +11,17 @@
 #define QUEUE_DEPTH 4
 #define DELAY 100000000 // 100ms
 
+static volatile sig_atomic_t run = 1;
+
+static void signal_handler(int signal_no) {
+    (void) signal_no;
+    run = 0;
+}
+
 int main(int argc, char *argv[]) {
     get_log_env();
+
+    signal(SIGINT, signal_handler);
 
     struct io_uring ring;
 
@@ -44,10 +55,10 @@ int main(int argc, char *argv[]) {
     
     // Enter the event loop
     struct io_uring_cqe *cqe;
-    while (1) {
+    while (run) {
         if (io_uring_wait_cqe(&ring, &cqe) != 0) {
-            log_error("Could not wait for CQE");
-            return 1;
+            log_warning("Could not wait for CQE\n");
+            continue;
         }
 
         // Ignore ETIME here, since we use a timeout to pace the output loop
@@ -79,5 +90,6 @@ int main(int argc, char *argv[]) {
         io_uring_cqe_seen(&ring, cqe);
     }
 
-    return 0;
+    log_info("Exitting main loop.\n");
+    return EXIT_SUCCESS;
 }
