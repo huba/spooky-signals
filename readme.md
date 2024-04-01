@@ -1,12 +1,36 @@
 # Spooky Signal
 
-## Description
+Some utilities for processing the spooky signals. If the contents of this repository seem like nonsense, it is because this is a technical screening task for a job application. I've been given a Docker image that runs a server that produces data on three TCP ports. The server also operates a "control channel" by listening for messages on a UDP port. For obvious reasons, that's all the context I will provide.
 
-Some utilities for processing the spooky signals.
+## Building & running
+
+The main deliverables are the executables `client1` and `client2`. To build them, run `make client1` and `make client2` respectively. The executables will be placed in the project root.
+
+Additional tools are provided for analysing the data produced by `client1`. These can be found in the `analysis` directory.
+
 
 ## Design decisions
 
-### io_uring
+### Main loop & I/O scheduling
+
+I decided to use the (relatively new-ish) `io_uring` interface for asynchronous I/O, mostly because I wanted to learn more about it. Not only is the solution using the interface to schedule read operations from the network sockets, but also to pace the main loop of the program. This is done by scheduling a multishot `IORING_OP_TIMEOUT` operation. This way, the main loop of the program is not spinning, but rather waiting for the next event to happen.
+
+
+### Logging
+
+Both `client1` and `client2` use the same logging system. The logging system is a simple wrapper around `fprintf` that writes to `stderr`. Control it by setting the `LOG_LEVEL` environment variable. The levels are:
+
+- `none`: No logging
+- `error`: Only log errors, which are fatal. This is the default.
+- `warning`: Log errors and warnings.
+- `info`: Log errors, warnings and info messages.
+
+Only the specified data output will be written to `stdout`, thus keeping data and log messages separate.
+
+
+### Modular design
+
+The program is divided into modules so that parts can be reused between `client1` and `client2`. Both headers and implementations are located in the `lib` directory. The source files for the executables are located in the in the project root.
 
 
 ## Analysis
