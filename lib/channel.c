@@ -116,4 +116,5 @@ void format_channels(FILE *fd, int n, ...) {
     }
 
     fprintf(fd, "}\n");
+    fflush(fd); // ensure it gets flushed even if output is buffered
 }
