@@ -49,15 +49,20 @@ int channel_event(struct event *e, struct io_uring *ring) {
             if (nl != NULL) {
                 strncpy(c->state, c->buffer, nl - c->buffer);
             }
-            log_info("%s reads %s\n", c->name, c->state);
-        case event_channel_connected: // FALLTHROUGH
-            if (c->continous_read) channel_read_async(c, ring);
+
+            log_info("%s updated to %s\n", c->name, c->state);
+            c->event.type = event_type_none;
+            if (c->continous_read) return channel_read_async(c, ring);
+            break;
+        case event_channel_connected:
+            log_info("%s connected successfully\n", c->name);
+            c->event.type = event_type_none;
+            if (c->continous_read) return channel_read_async(c, ring);
             break;
         default:
             return CHANNEL_E_UNKNOWN_EVENT;
     }
 
-    c->event.type = event_type_none;
     return 0;
 }
 
