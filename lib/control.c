@@ -1,5 +1,6 @@
 #include "control.h"
 
+#include <stdlib.h>
 #include <strings.h>
 #include <string.h>
 #include <sys/socket.h>
@@ -8,24 +9,13 @@
 #include "log.h"
 
 int control_interface_init(struct control_interface *interface, const char *address, int port) {
-    bzero(interface->buffer, sizeof(interface->buffer));
+    interface->buffer = NULL;
     interface->buffer_length = 0;
-    
-    interface->event.type = event_type_none;
-    interface->event.data = interface;
 
     bzero(&interface->address, sizeof(interface->address));
     interface->address.sin_family = AF_INET;
     interface->address.sin_port = htons(port);
     interface->address.sin_addr.s_addr = inet_addr(address);
-
-    interface->iov.iov_base = interface->buffer;
-    interface->iov.iov_len = interface->buffer_length;
-
-    interface->msg.msg_name = &interface->address;
-    interface->msg.msg_namelen = sizeof(interface->address);
-    interface->msg.msg_iov = &interface->iov;
-    interface->msg.msg_iovlen = 1;
 
     interface->fd = socket(AF_INET, SOCK_DGRAM, 0);
     if (interface->fd < 0) {
@@ -36,29 +26,36 @@ int control_interface_init(struct control_interface *interface, const char *addr
     return 0;
 }
 
-int _is_control_busy(struct control_interface *ctl) {
-    return ctl->event.type != event_type_none;
-}
+struct _dynamic_event {
+    struct event e;
+    struct msghdr msg;
+    struct iovec iov;
+    struct control_message n_message;
+};
 
 int control_interface_send(struct control_interface *interface, struct io_uring *ring, struct control_message *message) {
-    if (_is_control_busy(interface)) return 1;
+    size_t total_sz = sizeof(struct _dynamic_event);
+    struct _dynamic_event *d_event = malloc(total_sz);
 
+    d_event->e.type = event_control_sent;
+    d_event->e.data = d_event;
+
+    d_event->iov.iov_base = &d_event->n_message;
     if (message->operation == OPERATION_READ) {
-        interface->buffer_length = 6;
+        d_event->iov.iov_len = 6;
     } else {
-        interface->buffer_length = 8;
+        d_event->iov.iov_len = 8;
     }
 
-    {
-        struct control_message network_message = {
-            .operation = htons(message->operation),
-            .object = htons(message->object),
-            .property = htons(message->property),
-            .value = htons(message->value)
-        };
+    d_event->msg.msg_name = &interface->address;
+    d_event->msg.msg_namelen = sizeof(interface->address);
+    d_event->msg.msg_iov = &d_event->iov;
+    d_event->msg.msg_iovlen = 1;
 
-        memcpy(interface->buffer, &network_message, interface->buffer_length);
-    }
+    d_event->n_message.operation = htons(message->operation);
+    d_event->n_message.object = htons(message->object);
+    d_event->n_message.property = htons(message->property);
+    d_event->n_message.value = htons(message->value);
 
     struct io_uring_sqe *sqe = io_uring_get_sqe(ring);
     if (!sqe) {
@@ -66,20 +63,14 @@ int control_interface_send(struct control_interface *interface, struct io_uring 
         return 1;
     }
 
-    interface->iov.iov_len = interface->buffer_length;
-
-    io_uring_prep_sendmsg(sqe, interface->fd, &interface->msg, 0);
-    interface->event.type = event_control_sent;
-    io_uring_sqe_set_data(sqe, &interface->event);
+    io_uring_prep_sendmsg(sqe, interface->fd, &d_event->msg, 0);
+    io_uring_sqe_set_data(sqe, &d_event->e);
 
     return io_uring_submit(ring);
 }
 
 int control_interface_event(struct event_context *ctx, struct event *e) {
-    struct control_interface *ctl = e->data;
-
     if (e->type != event_control_sent) return 1;
-
-    ctl->event.type = event_type_none;
+    free(e->data);
     return 0;
 }

@@ -31,13 +31,10 @@ struct control_message {
 };
 
 struct control_interface {
-    uint8_t buffer[8];
+    uint8_t *buffer;
     int buffer_length;
     int fd;
-    struct event event;
     struct sockaddr_in address;
-    struct iovec iov;
-    struct msghdr msg;
 };
 
 int control_interface_init(struct control_interface *interface, const char *address, int port);
