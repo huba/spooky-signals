@@ -8,6 +8,7 @@ enum event_type {
     event_type_none = 0,
     event_channel_connected,
     event_channel_read,
+    event_control_sent,
     event_timeout,
 
     event_type_count,

@@ -9,6 +9,9 @@ LDLIBS = -lm -luring
 client1: .depend client1.o $(OBJECTS)
 	$(CC) $(CFLAGS) $(OBJECTS) client1.o -o $@ $(LDFLAGS) $(LDLIBS)
 
+client2: .depend client2.o $(OBJECTS)
+	$(CC) $(CFLAGS) $(OBJECTS) client2.o -o $@ $(LDFLAGS) $(LDLIBS)
+
 depend: .depend
 
 .depend: cmd = gcc -MM -MF depend $(var); cat depend >> .depend;

@@ -48,3 +48,11 @@ This plot shows that `out1` is a 1/2 Hz sine wave with an amplitude of 5.0. `out
 
 ![1 minute of out3](analysis/1_minute_capture.png)
 
+Sometomes there are missing values, or delayed values. For example when `out2` misses the sample period it usually sends a value in and it is delayed by one sample period.
+
+### Control Protocol
+
+I fuzzed the control protocol and documented the different properties objects have in `lib/control.h`. All channels can be enabled and disabled, and the frequency, amplitude, and glitch chance of `out1` and `out2` can be set. For `out3` it is possible to set the max duration and min duration of the high state.
+
+The glitch chance is controls how likely a value is skipped as mentioned above.
+
