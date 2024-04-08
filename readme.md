@@ -13,7 +13,9 @@ Additional tools are provided for analysing the data produced by `client1`. Thes
 
 ### Main loop & I/O scheduling
 
-I decided to use the (relatively new-ish) `io_uring` interface for asynchronous I/O, mostly because I wanted to learn more about it. Not only is the solution using the interface to schedule read operations from the network sockets, but also to pace the main loop of the program. This is done by scheduling a multishot `IORING_OP_TIMEOUT` operation. This way, the main loop of the program is not spinning, but rather waiting for the next event to happen.
+I decided to use the `io_uring` interface for asynchronous I/O, mostly because I wanted to learn more about it. Not only is the solution using the interface to schedule read operations from the network sockets, but also to pace the main loop of the program. This is done by scheduling a multishot `IORING_OP_TIMEOUT` operation. This way, the main loop of the program is not spinning, but rather waiting for the next event to happen.
+
+I started by using the `liburing` library as a proof of concept, and my intention was to implement the `io_uring` calls from scratch. Unfortunately using the `io_uring` interface directly requires quite a bit of boilerplate code, so I've not had time to do this.
 
 
 ### Logging
@@ -55,4 +57,12 @@ Sometomes there are missing values, or delayed values. For example when `out2` m
 I fuzzed the control protocol and documented the different properties objects have in `lib/control.h`. All channels can be enabled and disabled, and the frequency, amplitude, and glitch chance of `out1` and `out2` can be set. For `out3` it is possible to set the max duration and min duration of the high state.
 
 The glitch chance is controls how likely a value is skipped as mentioned above.
+
+### Client2 Example
+
+Here is some data collected from client 2:
+
+![10 seconds of data from client2](analysis/client2_10s.png)
+
+Amplitude and frequency varies as expected. The amplitude is 8000 when `out3` is above 3.0 and 4000 when it is below. The frequency is 1 Hz when `out3` is above 3.0 and 2 Hz when it is below.
 

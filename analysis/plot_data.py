@@ -42,7 +42,7 @@ def collect_data(data_channels: list[Channel], sync_channel: int = 0, time_limit
     print(f"Collecting data for {time_limit / 1000} seconds.")
     progress(0, time_limit, f"Syncing to {sync_channel_name}...")
 
-    proc = subprocess.Popen("./client1", stdout=subprocess.PIPE)
+    proc = subprocess.Popen("./client2", stdout=subprocess.PIPE)
 
     for line in io.TextIOWrapper(proc.stdout, encoding="utf-8"):
         output = json.loads(line)
@@ -83,7 +83,7 @@ def collect_data(data_channels: list[Channel], sync_channel: int = 0, time_limit
 
 if __name__ == "__main__":
     data_channels = [Channel("out1"), Channel("out2"), Channel("out3")]
-    time = 60_000
+    time = 10_000
 
     collect_data(data_channels, 1, time)
 
@@ -92,7 +92,7 @@ if __name__ == "__main__":
     for i, channel in enumerate(data_channels):
         ax[i].stem(channel.times, channel.values, label=channel.name)
         ax[i].set_xlim(0, time)
-        ax[i].set_ylim(-5, 5)
+        ax[i].set_ylim(-8, 8)
         ax[i].set_ylabel(channel.name)
     
     ax[-1].set_xlabel("Time [ms]")

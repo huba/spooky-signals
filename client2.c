@@ -47,7 +47,6 @@ int main(int argc, char *argv[]) {
 
     event_set_timeout(&ctx, 20, loop);
 
-    control_interface_set_frequency(&ctl, &ctx.ring, OBJECT_CHANNEL_1, 2000);
     init_3_channels(&ctx, channels);
 
     channel_watch_falling_edge(channels+2, on_falling_edge, 3.0);
