@@ -22,7 +22,7 @@ int channel_init(struct channel *c, const char *name, bool continous_read) {
     channel_clear(c);
 
     c->socket_fd = socket(AF_INET, SOCK_STREAM, 0);
-    if (c->socket_fd < 0) CHANNEL_E_COULD_NOT_CREATE_SOCKET;
+    if (c->socket_fd < 0) return CHANNEL_E_COULD_NOT_CREATE_SOCKET;
 
     c->event.type = event_type_none;
     c->event.data = c;
@@ -38,26 +38,27 @@ int _is_channel_busy(struct channel *c) {
     return c->event.type != event_type_none;
 }
 
-int channel_event(struct event *e, struct io_uring *ring) {
+int channel_event(struct event_context *ctx, struct event *e) {
     struct channel *c = e->data;
+    char *nl;
 
     if (!_is_channel_busy(c)) return CHANNEL_E_NOT_EXPECTING_EVENT;
 
     switch (c->event.type) {
         case event_channel_read:
-            char *nl = strchr(c->buffer, '\n');
+            nl = strchr(c->buffer, '\n');
             if (nl != NULL) {
                 strncpy(c->state, c->buffer, nl - c->buffer);
             }
 
             log_info("%s updated to %s\n", c->name, c->state);
             c->event.type = event_type_none;
-            if (c->continous_read) return channel_read_async(c, ring);
+            if (c->continous_read) return channel_read_async(c, &ctx->ring);
             break;
         case event_channel_connected:
             log_info("%s connected successfully\n", c->name);
             c->event.type = event_type_none;
-            if (c->continous_read) return channel_read_async(c, ring);
+            if (c->continous_read) return channel_read_async(c, &ctx->ring);
             break;
         default:
             return CHANNEL_E_UNKNOWN_EVENT;
