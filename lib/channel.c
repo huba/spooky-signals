@@ -27,6 +27,12 @@ int channel_init(struct channel *c, const char *name, bool continous_read) {
     c->event.type = event_type_none;
     c->event.data = c;
 
+    c->value = 0.0;
+    c->rising_threshold = 0.0;
+    c->on_rising_edge = NULL;
+    c->falling_threshold = 0.0;
+    c->on_falling_edge = NULL;
+
     return 0;
 }
 
@@ -36,6 +42,22 @@ void channel_clear(struct channel *c) {
 
 int _is_channel_busy(struct channel *c) {
     return c->event.type != event_type_none;
+}
+
+void _update_val(struct channel *c) {
+    double new_value;
+
+    int ret = sscanf(c->state, "%lf", &new_value);
+
+    if (ret != 1) return;
+
+    if (new_value >= c->rising_threshold && c->value < c->rising_threshold) {
+        if (c->on_rising_edge != NULL) c->on_rising_edge(c, new_value);
+    } else if (new_value < c->falling_threshold && c->value >= c->falling_threshold) {
+        if (c->on_falling_edge != NULL) c->on_falling_edge(c, new_value);
+    }
+
+    c->value = new_value;
 }
 
 int channel_event(struct event_context *ctx, struct event *e) {
@@ -50,6 +72,8 @@ int channel_event(struct event_context *ctx, struct event *e) {
             if (nl != NULL) {
                 strncpy(c->state, c->buffer, nl - c->buffer);
             }
+
+            _update_val(c);
 
             log_info("%s updated to %s\n", c->name, c->state);
             c->event.type = event_type_none;
@@ -102,6 +126,16 @@ int channel_read_async(struct channel *c, struct io_uring *ring) {
     io_uring_submit(ring);
 
     return 0;
+}
+
+void channel_watch_rising_edge(struct channel *c, void (*cb)(struct channel*, double), double threshold) {
+    c->rising_threshold = threshold;
+    c->on_rising_edge = cb;
+}
+
+void channel_watch_falling_edge(struct channel *c, void (*cb)(struct channel*, double), double threshold) {
+    c->falling_threshold = threshold;
+    c->on_falling_edge = cb;
 }
 
 void format_channels(FILE *fd, int n, ...) {

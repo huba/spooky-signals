@@ -16,6 +16,11 @@ struct channel {
     int socket_fd;
     char name[20];
     char state[20];
+    double value;
+    double rising_threshold;
+    void (*on_rising_edge)(struct channel*, double);
+    double falling_threshold;
+    void (*on_falling_edge)(struct channel*, double);
     char buffer[20];
     bool continous_read; // when true it will immediately schedule a read event after successful read or connection.
     struct event event;
@@ -28,6 +33,9 @@ void channel_clear(struct channel *c);
 int channel_event(struct event_context *ctx, struct event *e);
 int channel_connect_async(struct channel *c, struct io_uring *ring, const char *ip, int port);
 int channel_read_async(struct channel *c, struct io_uring *ring);
+
+void channel_watch_rising_edge(struct channel *c, void (*cb)(struct channel*, double), double threshold);
+void channel_watch_falling_edge(struct channel *c, void (*cb)(struct channel*, double), double threshold);
 
 void format_channels(FILE *fd, int n, ...);
 
