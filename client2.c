@@ -7,20 +7,14 @@
 #include "lib/log.h"
 #include "lib/control.h"
 
+
+
+struct event_context ctx;
 struct control_interface ctl;
 struct channel channels[3];
 uint16_t enabled = 0;
 
 int loop(struct event_context *ctx, struct event *e) {
-    // struct control_message msg = {
-    //     .operation = OPERATION_WRITE,
-    //     .object = OBJECT_CHANNEL_1,
-    //     .property = PROPERTY_ENABLED,
-    //     .value = (enabled++) % 2
-    // };
-
-    // control_interface_send(&ctl, &ctx->ring, &msg);
-
     format_channels(stdout, 3, channels, channels+1, channels+2);
     for (int i=0; i < 3; i++)
         channel_clear(channels+i);
@@ -29,17 +23,17 @@ int loop(struct event_context *ctx, struct event *e) {
 }
 
 void on_rising_edge(struct channel *channel, double new_value) {
-    printf("rising edge\n");
+    control_interface_set_frequency(&ctl, &ctx.ring, OBJECT_CHANNEL_1, 1000);
+    control_interface_set_amplitude(&ctl, &ctx.ring, OBJECT_CHANNEL_1, 8000);
 }
 
 void on_falling_edge(struct channel *channel, double new_value) {
-    printf("falling edge\n");
+    control_interface_set_frequency(&ctl, &ctx.ring, OBJECT_CHANNEL_1, 2000);
+    control_interface_set_amplitude(&ctl, &ctx.ring, OBJECT_CHANNEL_1, 4000);
 }
 
 int main(int argc, char *argv[]) {
     get_log_env();
-
-    struct event_context ctx;
 
     if (event_init(&ctx) != 0) {
         log_error("Could not initialize event loop.");
@@ -51,7 +45,9 @@ int main(int argc, char *argv[]) {
     register_control_interface_events(&ctx);
     register_channel_event_handlers(&ctx);
 
-    event_set_timeout(&ctx, 100, loop);
+    event_set_timeout(&ctx, 20, loop);
+
+    control_interface_set_frequency(&ctl, &ctx.ring, OBJECT_CHANNEL_1, 2000);
     init_3_channels(&ctx, channels);
 
     channel_watch_falling_edge(channels+2, on_falling_edge, 3.0);

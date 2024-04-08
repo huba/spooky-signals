@@ -20,7 +20,7 @@
 #define PROPERTY_MAX_DURATION 43
 
 #define PROPERTY_AMPLITUDE 170
-#define PROPERTY_FREQUENCY 255
+#define PROPERTY_FREQUENCY 255 // In mHz
 #define PROPERTY_GLITCH_CHANCE 300
 
 struct control_message {
@@ -58,6 +58,28 @@ static inline int control_interface_disable(struct control_interface *ctl, struc
         .object = channel,
         .property = PROPERTY_ENABLED,
         .value = 0
+    };
+
+    return control_interface_send(ctl, ring, &msg);
+}
+
+static inline int control_interface_set_frequency(struct control_interface *ctl, struct io_uring *ring, uint16_t channel, uint16_t frequency) {
+    struct control_message msg = {
+        .operation = OPERATION_WRITE,
+        .object = channel,
+        .property = PROPERTY_FREQUENCY,
+        .value = frequency
+    };
+
+    return control_interface_send(ctl, ring, &msg);
+}
+
+static inline int control_interface_set_amplitude(struct control_interface *ctl, struct io_uring *ring, uint16_t channel, uint16_t amplitude) {
+    struct control_message msg = {
+        .operation = OPERATION_WRITE,
+        .object = channel,
+        .property = PROPERTY_AMPLITUDE,
+        .value = amplitude
     };
 
     return control_interface_send(ctl, ring, &msg);
