@@ -1,15 +1,12 @@
 #include <stdio.h>
-#include <strings.h>
 #include <stdlib.h>
-
-#include <liburing.h>
+#include <stdint.h>
 
 #include "lib/events.h"
 #include "lib/channel.h"
 #include "lib/log.h"
 
-#define QUEUE_DEPTH 4
-#define DELAY 100000000 // 100ms
+
 
 struct channel channels[3];
 
@@ -34,7 +31,7 @@ int main(int argc, char *argv[]) {
 
     register_channel_event_handlers(&ctx);
     event_set_timeout(&ctx, 100, loop);
-    init_3_channels(&ctx, channels);
+    channel_init_multiple(channels, &ctx, 3, 4001);
 
     event_run_loop(&ctx);
 

@@ -66,7 +66,7 @@ int control_interface_send(struct control_interface *interface, struct io_uring 
     io_uring_prep_sendmsg(sqe, interface->fd, &d_event->msg, 0);
     io_uring_sqe_set_data(sqe, &d_event->e);
 
-    return io_uring_submit(ring);
+    return 0;
 }
 
 int control_interface_event(struct event_context *ctx, struct event *e) {

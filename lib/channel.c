@@ -5,7 +5,6 @@
 #include <stdarg.h>
 #include <sys/socket.h>
 #include <sys/time.h>
-#include <arpa/inet.h>
 
 #include <unistd.h>
 
@@ -34,6 +33,16 @@ int channel_init(struct channel *c, const char *name, bool continous_read) {
     c->on_falling_edge = NULL;
 
     return 0;
+}
+
+void channel_init_multiple(struct channel *channels, struct event_context *ctx, int count, int starting_port) {
+    char name[7];
+
+    for (int i=0; i < count; i++) {
+        snprintf(name, 7, "out%d", i+1);
+        channel_init(&channels[i], name, true);
+        channel_connect_async(&channels[i], &ctx->ring, "127.0.0.1", starting_port + i);
+    }
 }
 
 void channel_clear(struct channel *c) {
@@ -94,10 +103,9 @@ int channel_event(struct event_context *ctx, struct event *e) {
 int channel_connect_async(struct channel *c, struct io_uring *ring, const char *host, int port) {
     if (_is_channel_busy(c)) return CHANNEL_E_ALREADY_BUSY;
 
-    struct sockaddr_in addr;
-    addr.sin_family = AF_INET;
-    addr.sin_port = htons(port);
-    addr.sin_addr.s_addr = inet_addr(host);
+    c->addr.sin_family = AF_INET;
+    c->addr.sin_port = htons(port);
+    c->addr.sin_addr.s_addr = inet_addr(host);
 
     struct io_uring_sqe *sqe = io_uring_get_sqe(ring);
     if (!sqe) return CHANNEL_E_COULD_NOT_GET_SQE;
@@ -105,9 +113,8 @@ int channel_connect_async(struct channel *c, struct io_uring *ring, const char *
     log_info("%s attempting to connect to %s on port %d\n", c->name, host, port);
     c->event.type = event_channel_connected;
 
-    io_uring_prep_connect(sqe, c->socket_fd, (struct sockaddr *)&addr, sizeof(addr));
+    io_uring_prep_connect(sqe, c->socket_fd, (struct sockaddr *)&c->addr, sizeof(c->addr));
     io_uring_sqe_set_data(sqe, &c->event);
-    io_uring_submit(ring);
 
     return 0;
 }
@@ -123,7 +130,6 @@ int channel_read_async(struct channel *c, struct io_uring *ring) {
 
     io_uring_prep_read(sqe, c->socket_fd, c->buffer, sizeof(c->buffer) - 1, 0);
     io_uring_sqe_set_data(sqe, &c->event);
-    io_uring_submit(ring);
 
     return 0;
 }

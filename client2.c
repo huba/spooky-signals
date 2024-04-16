@@ -47,7 +47,7 @@ int main(int argc, char *argv[]) {
 
     event_set_timeout(&ctx, 20, loop);
 
-    init_3_channels(&ctx, channels);
+    channel_init_multiple(channels, &ctx, 3, 4001);
 
     channel_watch_falling_edge(channels+2, on_falling_edge, 3.0);
     channel_watch_rising_edge(channels+2, on_rising_edge, 3.0);
